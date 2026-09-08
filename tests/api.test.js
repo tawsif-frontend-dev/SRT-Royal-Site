@@ -27,7 +27,10 @@ async function setupMongoMemory() {
     return;
   }
 
-  const mongoVersion = process.env.MONGOMS_VERSION || '7.0.3';
+  // MongoDB 4.2.25 supports older local CPUs on Windows. CI supplies its own
+  // MongoDB 7 service through CI_MONGODB_URI, so this fallback affects only
+  // local test runs without a database.
+  const mongoVersion = process.env.MONGOMS_VERSION || '4.2.25';
 
   // MongoMemoryServer.create() has no built-in timeout — if the binary
   // download stalls, the whole test run hangs silently instead of failing

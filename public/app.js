@@ -545,31 +545,10 @@ async function loadMarketplaceOptions() {
 /* ─────────────────────────────────────────────
    FEATURE 1: PHOTO UPLOAD
 ───────────────────────────────────────────── */
-async function uploadPhoto(file) {
-  const token = getToken();
-  if (!token || !file) return null;
-
-  if (!file.type.startsWith("image/")) {
-    alert("Please choose an image file.");
-    return null;
-  }
-  if (file.size > 2_000_000) {
-    alert("Photo is too large — please choose one under 2MB.");
-    return null;
-  }
-
-  try {
-    throw new Error("Image storage is not configured. Add a production storage provider before uploading.");
-  } catch (err) {
-    alert("Photo upload failed: " + err.message);
-    return null;
-  }
-}
-
 /* ─────────────────────────────────────────────
    FEATURE 2: PROFILE EDIT (name, company, phone)
 ───────────────────────────────────────────── */
-async function saveProfileEdit(name, company, phone) {
+async function saveProfileEdit(name, company, phone, photo) {
   const token = getToken();
   if (!token) return false;
 
@@ -580,7 +559,7 @@ async function saveProfileEdit(name, company, phone) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, company, phone }),
+      body: JSON.stringify({ name, company, phone, ...(photo ? { photo } : {}) }),
     });
     const data = await safeJsonResponse(res);
     if (!res.ok) throw new Error(data.message || "Update failed");
@@ -726,10 +705,6 @@ function renderDesignerProfile(user, hireRequests, projects, earnings) {
           ? `<img src="${escapeHtml(user.photo)}" alt="Profile" class="profile-photo" id="profilePhotoImg"/>`
           : `<div class="profile-avatar" id="profileAvatarInitial">${(user.name || user.email || "?").charAt(0).toUpperCase()}</div>`
         }
-        <label class="photo-upload-btn" title="Change photo">
-          📷
-          <input type="file" id="photoFileInput" accept="image/*" style="display:none;"/>
-        </label>
       </div>
       <div>
         <h3>Welcome, ${escapeHtml(user.name || "Designer")}</h3>
@@ -745,6 +720,7 @@ function renderDesignerProfile(user, hireRequests, projects, earnings) {
         <div class="form-group"><label>Full Name</label><input type="text" id="editName" value="${escapeHtml(user.name || "")}" class="form-input"/></div>
         <div class="form-group"><label>Phone</label><input type="text" id="editPhone" value="${escapeHtml(user.phone || "")}" class="form-input"/></div>
       </div>
+      <div class="form-group"><label>Profile image URL (HTTPS, optional)</label><input type="url" id="editPhotoUrl" value="${escapeHtml(user.photo || "")}" class="form-input" placeholder="https://..."/></div>
       <div style="display:flex;gap:12px;margin-top:8px;">
         <button class="btn btn-gold" id="saveProfileBtn">💾 Save Changes</button>
         <button class="btn btn-outline" id="cancelEditBtn">Cancel</button>
@@ -780,16 +756,6 @@ function renderDesignerProfile(user, hireRequests, projects, earnings) {
     </div>
   `;
 
-  $("#photoFileInput")?.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const label = $(".photo-upload-btn");
-    if (label) label.textContent = "⏳";
-    const photoUrl = await uploadPhoto(file);
-    if (photoUrl) updateAuthUI();
-    if (label) label.textContent = "📷";
-  });
-
   $("#editProfileBtn")?.addEventListener("click", () => {
     $("#profileEditWrap").style.display = "block";
     $("#editProfileBtn").style.display = "none";
@@ -801,10 +767,11 @@ function renderDesignerProfile(user, hireRequests, projects, earnings) {
   $("#saveProfileBtn")?.addEventListener("click", async () => {
     const name = $("#editName")?.value.trim();
     const phone = $("#editPhone")?.value.trim();
+    const photo = $("#editPhotoUrl")?.value.trim();
     if (!name) { alert("Name cannot be empty."); return; }
     const btn = $("#saveProfileBtn");
     btn.disabled = true; btn.textContent = "Saving…";
-    const ok = await saveProfileEdit(name, "", phone);
+    const ok = await saveProfileEdit(name, "", phone, photo);
     btn.disabled = false; btn.textContent = "💾 Save Changes";
     if (ok) {
       showMsg($("#editSuccess"), "✅ Profile updated!");
@@ -910,10 +877,6 @@ function renderClientProfile(user, hireRequests) {
           ? `<img src="${escapeHtml(user.photo)}" alt="Profile" class="profile-photo" id="profilePhotoImg"/>`
           : `<div class="profile-avatar" id="profileAvatarInitial">${(user.name || user.email || "?").charAt(0).toUpperCase()}</div>`
         }
-        <label class="photo-upload-btn" title="Change photo">
-          📷
-          <input type="file" id="photoFileInput" accept="image/*" style="display:none;"/>
-        </label>
       </div>
       <div>
         <h3 id="displayName">Welcome, ${escapeHtml(user.name || "Client")}</h3>
@@ -942,6 +905,10 @@ function renderClientProfile(user, hireRequests) {
       <div class="form-group">
         <label>Phone</label>
         <input type="text" id="editPhone" value="${escapeHtml(user.phone || "")}" class="form-input"/>
+      </div>
+      <div class="form-group">
+        <label>Profile image URL (HTTPS, optional)</label>
+        <input type="url" id="editPhotoUrl" value="${escapeHtml(user.photo || "")}" class="form-input" placeholder="https://..."/>
       </div>
       <div style="display:flex;gap:12px;margin-top:8px;">
         <button class="btn btn-gold" id="saveProfileBtn">💾 Save Changes</button>
@@ -993,20 +960,7 @@ function renderClientProfile(user, hireRequests) {
 
   /* ── Event Listeners for Client Profile ── */
 
-  // Feature 1: Photo upload
-  $("#photoFileInput")?.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const label = $(".photo-upload-btn");
-    if (label) label.textContent = "⏳";
-    const photoUrl = await uploadPhoto(file);
-    if (photoUrl) {
-      updateAuthUI(); // re-render profile with new photo
-    }
-    if (label) label.textContent = "📷";
-  });
-
-  // Feature 2: Edit toggle
+  // Edit toggle
   $("#editProfileBtn")?.addEventListener("click", () => {
     $("#profileEditWrap").style.display = "block";
     $("#editProfileBtn").style.display = "none";
@@ -1021,13 +975,14 @@ function renderClientProfile(user, hireRequests) {
     const name    = $("#editName")?.value.trim();
     const company = $("#editCompany")?.value.trim();
     const phone   = $("#editPhone")?.value.trim();
+    const photo   = $("#editPhotoUrl")?.value.trim();
 
     if (!name) { alert("Name cannot be empty."); return; }
 
     const btn = $("#saveProfileBtn");
     btn.disabled = true; btn.textContent = "Saving…";
 
-    const ok = await saveProfileEdit(name, company, phone);
+    const ok = await saveProfileEdit(name, company, phone, photo);
     btn.disabled = false; btn.textContent = "💾 Save Changes";
 
     if (ok) {

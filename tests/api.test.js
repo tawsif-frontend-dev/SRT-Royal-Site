@@ -163,6 +163,21 @@ test('pending (unapproved) designers are not publicly searchable', async () => {
   assert.equal(res.body.designers.length, 0, 'an unapproved designer must not appear in the public listing');
 });
 
+test('hire requests cannot target a pending designer by guessing their ID', async () => {
+  const res = await request(app)
+    .post('/api/hire-requests')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      designerId: global.__testDesignerId,
+      projectTitle: 'Private profile request',
+      description: 'This must not reach an unapproved designer.',
+      budget: 100,
+    });
+
+  assert.equal(res.status, 400);
+  assert.match(res.body.message, /approved|available/i);
+});
+
 test('admin can approve a pending designer, after which it becomes publicly searchable', async () => {
   const approveRes = await request(app)
     .patch(`/api/admin/designers/${global.__testDesignerId}/status`)
@@ -170,6 +185,12 @@ test('admin can approve a pending designer, after which it becomes publicly sear
     .send({ status: 'approved' });
 
   assert.equal(approveRes.status, 200);
+
+  const refreshedUserRes = await request(app)
+    .get('/api/users/me')
+    .set('Authorization', `Bearer ${token}`);
+  assert.equal(refreshedUserRes.status, 200);
+  assert.equal(refreshedUserRes.body.user.role, 'designer', 'role changes must take effect for tokens issued before approval');
 
   const res = await request(app).get('/api/designers?search=premium');
   assert.equal(res.status, 200);
@@ -385,6 +406,7 @@ test('accepting/receiving a hire request creates a notification the designer can
     .set('Authorization', `Bearer ${designerToken}`)
     .send({ bio: 'Notif test designer', skills: ['CSS'], categories: ['Web Design'], experience: 2, pricing: { hourly: 40 }, availability: 'Available' });
   const designerProfileId = designerProfileRes.body.designer._id || designerProfileRes.body.designer.id;
+  await require('../server/models/Designer').findByIdAndUpdate(designerProfileId, { status: 'approved' });
 
   const hireRes = await request(app)
     .post('/api/hire-requests')
@@ -426,6 +448,7 @@ test('signup, hire-request accept, and payment confirm all appear in the admin a
     .set('Authorization', `Bearer ${designerToken}`)
     .send({ bio: 'Activity test designer', skills: ['JS'], categories: ['Web Design'], experience: 4, pricing: { hourly: 50 }, availability: 'Available' });
   const designerProfileId = designerProfileRes.body.designer._id || designerProfileRes.body.designer.id;
+  await require('../server/models/Designer').findByIdAndUpdate(designerProfileId, { status: 'approved' });
 
   const hireRes = await request(app)
     .post('/api/hire-requests')
@@ -438,6 +461,12 @@ test('signup, hire-request accept, and payment confirm all appear in the admin a
     .set('Authorization', `Bearer ${designerToken}`)
     .send({ status: 'accepted' });
   assert.equal(acceptRes.status, 200);
+
+  const clientAdvanceRes = await request(app)
+    .patch(`/api/projects/${acceptRes.body.project._id || acceptRes.body.project.id}/status`)
+    .set('Authorization', `Bearer ${clientToken}`)
+    .send({ status: 'in_progress' });
+  assert.equal(clientAdvanceRes.status, 403, 'only the assigned designer may advance a project');
 
   // Check via the DB directly first — confirms the fire-and-forget logActivity
   // calls actually persisted, independent of whether the admin API works.
@@ -464,4 +493,45 @@ test('non-admin cannot read the activity log', async () => {
     .get('/api/admin/activity')
     .set('Authorization', `Bearer ${global.__testClientToken}`);
   assert.equal(res.status, 403);
+});
+
+test('a deactivated account loses access even when its JWT has not expired', async () => {
+  const signupRes = await request(app).post('/api/auth/signup').send({
+    name: 'Disabled User', email: 'disabled@example.com', password: 'Password123!', role: 'client',
+  });
+  assert.equal(signupRes.status, 201);
+
+  const User = require('../server/models/User');
+  await User.findByIdAndUpdate(signupRes.body.user._id || signupRes.body.user.id, { isActive: false });
+
+  const res = await request(app)
+    .get('/api/users/me')
+    .set('Authorization', `Bearer ${signupRes.body.token}`);
+  assert.equal(res.status, 401);
+});
+
+test('a guest inquiry cannot be accepted into a project without a client account', async () => {
+  const guestRequestRes = await request(app)
+    .post('/api/hire-requests')
+    .send({
+      designerId: global.__testDesignerId,
+      projectTitle: 'Guest inquiry',
+      description: 'I am interested but have not created an account yet.',
+      budget: 250,
+      name: 'Guest Client',
+      email: 'guest@example.com',
+    });
+  assert.equal(guestRequestRes.status, 201);
+
+  const requestId = guestRequestRes.body.hireRequest._id || guestRequestRes.body.hireRequest.id;
+  const acceptRes = await request(app)
+    .patch(`/api/hire-requests/${requestId}`)
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ status: 'accepted' });
+  assert.equal(acceptRes.status, 400);
+  assert.match(acceptRes.body.message, /guest inquiry/i);
+
+  const HireRequest = require('../server/models/HireRequest');
+  const savedRequest = await HireRequest.findById(requestId);
+  assert.equal(savedRequest.status, 'pending');
 });

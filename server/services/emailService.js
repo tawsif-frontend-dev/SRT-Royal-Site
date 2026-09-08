@@ -1,3 +1,12 @@
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Sends transactional email through the Resend HTTPS API using the global
 // fetch API, so no SMTP/npm dependency is required (works on Vercel as-is).
 async function sendEmail({ to, subject, text, html }) {
@@ -45,4 +54,4 @@ async function notifyOwner({ subject, text, html }) {
   }
 }
 
-module.exports = { sendEmail, notifyOwner };
+module.exports = { sendEmail, notifyOwner, escapeHtml };

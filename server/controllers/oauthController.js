@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { signToken } = require('./authController');
-const { notifyOwner } = require('../services/emailService');
+const { notifyOwner, escapeHtml } = require('../services/emailService');
 
 const STATE_COOKIE = 'srt_oauth_state';
 
@@ -168,11 +168,11 @@ async function handleCallback(provider, req, res, next) {
     notifyOwner(created ? {
       subject: `New account created: ${user.name}`,
       text: `A new account was created via ${provider}.\n\nName: ${user.name}\nEmail: ${user.email}`,
-      html: `<p>A new account was created via <b>${provider}</b>.</p><p><b>Name:</b> ${user.name}<br/><b>Email:</b> ${user.email}</p>`,
+      html: `<p>A new account was created via <b>${escapeHtml(provider)}</b>.</p><p><b>Name:</b> ${escapeHtml(user.name)}<br/><b>Email:</b> ${escapeHtml(user.email)}</p>`,
     } : {
       subject: `Login: ${user.name}`,
       text: `${user.name} (${user.email}) just logged in via ${provider}.`,
-      html: `<p><b>${user.name}</b> (${user.email}) just logged in via ${provider}.</p>`,
+      html: `<p><b>${escapeHtml(user.name)}</b> (${escapeHtml(user.email)}) just logged in via ${escapeHtml(provider)}.</p>`,
     });
 
     res.setHeader('Set-Cookie', stateCookie('', 0));

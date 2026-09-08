@@ -40,16 +40,26 @@ router.patch('/:id/status', async (req, res, next) => {
     const project = await Project.findOne({ _id: requireObjectId(req.params.id, 'Project ID'), ...(await projectFilter(req.user)) });
     if (!project) return res.status(404).json({ message: 'Project not found.' });
     const status = requireString(req.body.status, 'Status', { max: 20 });
+    const designer = await Designer.findOne({ _id: project.designer, user: req.user.id }).select('_id').lean();
+    const isClient = String(project.client) === String(req.user.id);
+    const isDesigner = !!designer;
+    const isAdmin = req.user.role === 'admin';
     const allowed = {
       pending: ['in_progress', 'cancelled'],
       in_progress: ['completed', 'cancelled'],
       completed: [],
       cancelled: [],
     };
-    if (req.user.role !== 'admin' && !allowed[project.status]?.includes(status)) {
+    if (!isAdmin && !allowed[project.status]?.includes(status)) {
       return res.status(400).json({ message: `Cannot change project from ${project.status} to ${status}.` });
     }
     if (!Object.prototype.hasOwnProperty.call(allowed, status)) return res.status(400).json({ message: 'Invalid project status.' });
+    if (!isAdmin && status === 'cancelled' && !isClient && !isDesigner) {
+      return res.status(403).json({ message: 'Only the client or assigned designer can cancel this project.' });
+    }
+    if (!isAdmin && status !== 'cancelled' && !isDesigner) {
+      return res.status(403).json({ message: 'Only the assigned designer can advance this project.' });
+    }
     project.status = status;
     await project.save();
     logActivity({ actor: req.user.id, actorRole: req.user.role, action: `project.${status}`, targetType: 'Project', targetId: project._id, metadata: { title: project.title } });

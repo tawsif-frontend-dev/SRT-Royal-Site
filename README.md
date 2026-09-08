@@ -77,6 +77,16 @@ OWNER_EMAIL=you@example.com
 
 Production start-up refuses to boot without `MONGODB_URI` and a `JWT_SECRET` of at least 32 characters — it will not silently fall back to an insecure default.
 
+### Create the first admin
+
+Public sign-up never grants the admin role. Set `MONGODB_URI`, `ADMIN_NAME`, `ADMIN_EMAIL`, and a password of at least 12 characters in your shell, then run:
+
+```bash
+npm run create-admin
+```
+
+To intentionally promote an existing account after checking the email address, add `-- --promote-existing`. Do not put `ADMIN_PASSWORD` in a committed `.env` file.
+
 ## Development
 
 ```bash

@@ -6,7 +6,7 @@ const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { requireObjectId, requireString, isValidEmail, pagination } = require('../middleware/validation');
 const { createNotification } = require('../services/notificationService');
 const { logActivity } = require('../services/activityLogService');
-const { sendEmail } = require('../services/emailService');
+const { sendEmail, escapeHtml } = require('../services/emailService');
 const Project = require('../models/Project');
 
 const router = express.Router();
@@ -58,15 +58,15 @@ router.post('/', optionalAuth, async (req, res, next) => {
       if (!mongoose.Types.ObjectId.isValid(designerId)) {
         return res.status(400).json({ message: 'The selected designer could not be found. Please choose a designer again.' });
       }
-      designer = await Designer.findById(designerId);
+      designer = await Designer.findOne({ _id: designerId, status: 'approved' });
       if (!designer) {
-        return res.status(400).json({ message: 'The selected designer could not be found. Please choose a designer again.' });
+        return res.status(400).json({ message: 'The selected designer is not currently available. Please choose an approved designer again.' });
       }
     } else {
       // No designer specified at all — this is a legitimate general inquiry
       // ("Hire Me" style request with no specific pick), so auto-assign the
-      // top-rated available designer.
-      designer = await Designer.findOne().sort({ rating: -1, createdAt: -1 });
+      // top-rated approved designer.
+      designer = await Designer.findOne({ status: 'approved' }).sort({ rating: -1, createdAt: -1 });
     }
 
     const request = await HireRequest.create({
@@ -106,7 +106,7 @@ router.post('/', optionalAuth, async (req, res, next) => {
           to: process.env.OWNER_EMAIL,
           subject: `New hire request: ${request.projectTitle}`,
           text: `New hire request received.\n\nProject: ${request.projectTitle}\nBudget: ${request.budgetLabel || '—'}\nTimeline: ${request.timeline || '—'}\nStyle: ${request.designStyle || '—'}\nDesigner: ${designer ? 'assigned automatically/specific' : 'none available yet'}\nContact: ${contactLine}\n\nDescription:\n${request.description}`,
-          html: `<h3>New hire request</h3><p><b>Project:</b> ${request.projectTitle}<br/><b>Budget:</b> ${request.budgetLabel || '—'}<br/><b>Timeline:</b> ${request.timeline || '—'}<br/><b>Contact:</b> ${contactLine}</p><p>${request.description}</p>`,
+          html: `<h3>New hire request</h3><p><b>Project:</b> ${escapeHtml(request.projectTitle)}<br/><b>Budget:</b> ${escapeHtml(request.budgetLabel || '—')}<br/><b>Timeline:</b> ${escapeHtml(request.timeline || '—')}<br/><b>Contact:</b> ${escapeHtml(contactLine)}</p><p>${escapeHtml(request.description)}</p>`,
         });
       } catch (emailError) {
         console.error('Owner notification email failed:', emailError.message);
@@ -127,7 +127,8 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     const requestDesigner = await Designer.findById(request.designer).select('user');
     const isClient = String(request.client) === String(req.user.id);
     const isDesignerUser = !!requestDesigner && String(requestDesigner.user) === String(req.user.id);
-    if (req.user.role !== 'admin' && !isClient && !isDesignerUser) {
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin && !isClient && !isDesignerUser) {
       return res.status(403).json({ message: 'You cannot update this hire request.' });
     }
 
@@ -137,9 +138,20 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       rejected: [], in_progress: ['completed', 'cancelled'], completed: [], cancelled: [],
     };
     if (!transitions[request.status]?.includes(nextStatus)) return res.status(400).json({ message: `Cannot change request from ${request.status} to ${nextStatus}.` });
-    if (['accepted', 'rejected'].includes(nextStatus) && req.user.role !== 'admin' && !isDesignerUser) {
-      return res.status(403).json({ message: 'Only the designer can accept or reject this hire request.' });
+    if (!isAdmin && ['accepted', 'rejected', 'in_progress', 'completed'].includes(nextStatus) && !isDesignerUser) {
+      return res.status(403).json({ message: 'Only the assigned designer can advance this hire request.' });
     }
+    if (!isAdmin && nextStatus === 'cancelled' && !isClient && !isDesignerUser) {
+      return res.status(403).json({ message: 'Only the client or assigned designer can cancel this hire request.' });
+    }
+    // Guests can submit a lead, but a billable project needs an authenticated
+    // client account for ownership, payments, and notifications. Do not mark
+    // the request accepted unless that account exists.
+    if (nextStatus === 'accepted' && !request.client) {
+      return res.status(400).json({ message: 'This is a guest inquiry. Ask the client to create an account before accepting it as a project.' });
+    }
+
+    const previousStatus = request.status;
     request.status = nextStatus;
     await request.save();
     logActivity({
@@ -148,7 +160,17 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       metadata: { projectTitle: request.projectTitle },
     });
     if (nextStatus === 'accepted') {
-      const project = await Project.create({ client: request.client, designer: request.designer, hireRequest: request._id, title: request.projectTitle, description: request.description, budget: request.budget, deadline: request.deadline });
+      let project;
+      try {
+        project = await Project.create({ client: request.client, designer: request.designer, hireRequest: request._id, title: request.projectTitle, description: request.description, budget: request.budget, deadline: request.deadline });
+      } catch (error) {
+        // Do not leave the request accepted if its required project could not
+        // be created. This compensation also keeps standalone MongoDB setups
+        // working without requiring transaction support from a replica set.
+        request.status = previousStatus;
+        await request.save();
+        throw error;
+      }
       await createNotification({ user: request.client, type: 'hire_accepted', message: `Your hire request was accepted. Project ${project.title} was created.`, metadata: { hireRequestId: request.id } });
       logActivity({ actor: req.user.id, actorRole: req.user.role, action: 'project.created', targetType: 'Project', targetId: project._id, metadata: { title: project.title } });
       return res.json({ hireRequest: request, project });

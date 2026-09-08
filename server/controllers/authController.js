@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const { isValidEmail, requireString } = require('../middleware/validation');
-const { sendEmail, notifyOwner } = require('../services/emailService');
+const { sendEmail, notifyOwner, escapeHtml } = require('../services/emailService');
 const { logActivity } = require('../services/activityLogService');
 
 function sanitizeUser(user) {
@@ -63,7 +63,7 @@ async function signup(req, res, next) {
     notifyOwner({
       subject: `New account created: ${user.name}`,
       text: `A new account was created.\n\nName: ${user.name}\nEmail: ${user.email}\nRole: ${user.role}${user.company ? `\nCompany: ${user.company}` : ''}`,
-      html: `<p>A new account was created.</p><p><b>Name:</b> ${user.name}<br/><b>Email:</b> ${user.email}<br/><b>Role:</b> ${user.role}${user.company ? `<br/><b>Company:</b> ${user.company}` : ''}</p>`,
+      html: `<p>A new account was created.</p><p><b>Name:</b> ${escapeHtml(user.name)}<br/><b>Email:</b> ${escapeHtml(user.email)}<br/><b>Role:</b> ${escapeHtml(user.role)}${user.company ? `<br/><b>Company:</b> ${escapeHtml(user.company)}` : ''}</p>`,
     });
 
     return res.status(201).json({ token, user: sanitizeUser(user) });
@@ -95,7 +95,7 @@ async function login(req, res, next) {
     notifyOwner({
       subject: `Login: ${user.name}`,
       text: `${user.name} (${user.email}) just logged in.`,
-      html: `<p><b>${user.name}</b> (${user.email}) just logged in.</p>`,
+      html: `<p><b>${escapeHtml(user.name)}</b> (${escapeHtml(user.email)}) just logged in.</p>`,
     });
 
     return res.json({ token, user: sanitizeUser(user) });
@@ -135,7 +135,7 @@ async function forgotPassword(req, res, next) {
         to: user.email,
         subject: 'SRT Royal — Reset your password',
         text: `You requested a password reset. Open this link within 1 hour: ${resetUrl}`,
-        html: `<p>You requested a password reset for your SRT Royal account.</p><p><a href="${resetUrl}">Reset your password</a> — the link is valid for 1 hour.</p><p>If you did not request this, you can safely ignore this email.</p>`,
+        html: `<p>You requested a password reset for your SRT Royal account.</p><p><a href="${escapeHtml(resetUrl)}">Reset your password</a> — the link is valid for 1 hour.</p><p>If you did not request this, you can safely ignore this email.</p>`,
       });
     } catch (emailError) {
       return res.json({ message: `${genericMessage} The email could not be delivered right now — please try again later.` });

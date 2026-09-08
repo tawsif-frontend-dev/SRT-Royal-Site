@@ -1,7 +1,7 @@
 const express = require('express');
 const ContactMessage = require('../models/ContactMessage');
 const { isValidEmail } = require('../middleware/validation');
-const { sendEmail } = require('../services/emailService');
+const { sendEmail, escapeHtml } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -32,7 +32,7 @@ router.post('/', async (req, res, next) => {
           to: process.env.OWNER_EMAIL,
           subject: `Contact form: ${entry.subject || entry.name}`,
           text: `From: ${entry.name} <${entry.email}>${entry.phone ? `\nPhone: ${entry.phone}` : ''}\n\n${entry.message}`,
-          html: `<p><b>From:</b> ${entry.name} &lt;${entry.email}&gt;${entry.phone ? `<br/><b>Phone:</b> ${entry.phone}` : ''}</p><p>${entry.message}</p>`,
+          html: `<p><b>From:</b> ${escapeHtml(entry.name)} &lt;${escapeHtml(entry.email)}&gt;${entry.phone ? `<br/><b>Phone:</b> ${escapeHtml(entry.phone)}` : ''}</p><p>${escapeHtml(entry.message)}</p>`,
         });
         delivered = result.sent;
       } catch (emailError) {

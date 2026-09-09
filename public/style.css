@@ -460,13 +460,12 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 .hero-split .hero-sub { margin: 0 0 40px; text-align: left; }
 .hero-split .hero-actions { justify-content: flex-start; margin-bottom: 48px; }
 .hero-split .hero-stats { justify-content: flex-start; margin: 0; width: fit-content; }
-.royal-env-canvas {
-  position: absolute;
-  inset: -10% -5%;
-  width: 110%; height: 120%;
-  z-index: 0;
+.royal-env-canvas-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: -1;
   pointer-events: none;
-  transition: opacity 1.2s ease;
 }
 .hero-split-inner { position: relative; z-index: 1; }
 .hero-split-photo {
@@ -514,7 +513,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    ABOUT
 ═══════════════════════════════════════════════════════════ */
-.about-section { background: var(--navy); }
+.about-section { background: rgba(10,15,30,.92); }
 
 .about-layout {
   display: grid;
@@ -561,7 +560,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    SKILLS
 ═══════════════════════════════════════════════════════════ */
-.skills-section { background: var(--navy-2); }
+.skills-section { background: rgba(15,22,40,.92); }
 
 .skills-grid {
   display: grid;
@@ -827,7 +826,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    PORTFOLIO / RECENT WORK
 ═══════════════════════════════════════════════════════════ */
-.portfolio-section { background: var(--navy-2); }
+.portfolio-section { background: rgba(15,22,40,.92); }
 
 .portfolio-grid {
   display: grid;
@@ -900,7 +899,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    SERVICES
 ═══════════════════════════════════════════════════════════ */
-.services-section { background: var(--navy); }
+.services-section { background: rgba(10,15,30,.92); }
 
 .services-grid {
   display: grid;
@@ -933,7 +932,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    WHY SRT ROYAL
 ═══════════════════════════════════════════════════════════ */
-.why-section { background: var(--navy-2); }
+.why-section { background: rgba(15,22,40,.92); }
 
 .why-grid {
   display: grid;
@@ -1087,7 +1086,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    TESTIMONIALS
 ═══════════════════════════════════════════════════════════ */
-.testimonials-section { background: var(--navy); }
+.testimonials-section { background: rgba(10,15,30,.92); }
 
 .testimonials-grid {
   display: grid;
@@ -1582,7 +1581,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    CONTACT CTA
 ═══════════════════════════════════════════════════════════ */
-.contact-cta-section { background: var(--navy-2); }
+.contact-cta-section { background: rgba(15,22,40,.92); }
 .contact-cta {
   text-align: center;
   max-width: 640px;
@@ -1617,7 +1616,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
 /* ═══════════════════════════════════════════════════════════
    FOOTER
 ═══════════════════════════════════════════════════════════ */
-.footer { background: var(--navy); border-top: 1px solid var(--border); position: relative; overflow: hidden; }
+.footer { background: rgba(10,15,30,.95); border-top: 1px solid var(--border); position: relative; overflow: hidden; }
 
 .footer-top { padding: 72px 0 48px; }
 

@@ -1,23 +1,23 @@
 // public/js/env/environment.js
 //
-// Cinematic hero background for the SRT Royal homepage: a layered
+// Cinematic full-page background for the SRT Royal homepage: a layered
 // sky + procedural cloud + parallax mountain scene rendered with Three.js,
-// confined to the hero's text column so the rest of the site (and the
-// hero photo) are completely untouched.
+// fixed behind every section. Each major section is now translucent
+// (see .about-section / .skills-section / etc. in style.css) so the scene
+// shows through consistently as the page scrolls, and the scene's "mood"
+// (fog color, cloud tint, camera height) shifts per section.
 //
 // Design decisions (documented on purpose, not hidden):
-//  - Scoped to the HERO only, not the whole site. Persisting a translucent
-//    3D backdrop behind every section would require making every section's
-//    background translucent too, which is a much bigger visual-hierarchy
-//    change that needs its own review rather than a blind global edit.
 //  - Driven by native window scroll + GSAP ScrollTrigger, NOT a smooth-scroll
 //    library like Lenis. The site already has working scroll-based code
 //    (navbar state, back-to-top, reveal-on-scroll, anchor smooth-scroll) —
 //    hijacking native scroll risked breaking all of that. ScrollTrigger
 //    works fine on top of native scrolling.
-//  - Falls back silently to the existing static CSS hero background
-//    (hero-bg-pattern / gradients already in the markup) if WebGL isn't
-//    available, so there's no broken/blank state on old devices.
+//  - Section backgrounds were made translucent (~92% opacity) rather than
+//    fully transparent, so text contrast barely changes versus before —
+//    the environment reads as an ambient presence, not a distraction.
+//  - Falls back silently to the existing static CSS backgrounds if WebGL
+//    isn't available, so there's no broken/blank state on old devices.
 
 import * as THREE from 'https://unpkg.com/three@0.160.1/build/three.module.js';
 
@@ -32,7 +32,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.1/build/three.module.js';
   try {
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMobile, powerPreference: 'low-power' });
   } catch (e) {
-    return; // No WebGL — keep the existing CSS hero background as-is.
+    return; // No WebGL — keep the existing CSS backgrounds as-is.
   }
 
   const scene = new THREE.Scene();
@@ -42,10 +42,8 @@ import * as THREE from 'https://unpkg.com/three@0.160.1/build/three.module.js';
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.3 : 2));
 
   function resize() {
-    const parent = canvas.parentElement;
-    const w = parent ? parent.clientWidth : window.innerWidth;
-    const h = parent ? parent.clientHeight : window.innerHeight;
-    if (!w || !h) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -53,9 +51,7 @@ import * as THREE from 'https://unpkg.com/three@0.160.1/build/three.module.js';
   window.addEventListener('resize', resize);
 
   // ── SKY: navy → royal-gold gradient dome ──────────────────────────
-  const sky = new THREE.Mesh(
-    new THREE.SphereGeometry(50, 32, 16),
-    new THREE.ShaderMaterial({
+  const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
       uniforms: {
         uTop: { value: new THREE.Color('#0a0f1e') },
@@ -78,9 +74,8 @@ import * as THREE from 'https://unpkg.com/three@0.160.1/build/three.module.js';
           col = mix(col, uGold, glow * 0.16);
           gl_FragColor = vec4(col, 1.0);
         }`
-    })
-  );
-  scene.add(sky);
+    });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), skyMat));
 
   // ── CLOUDS: layered procedural (fbm noise) planes ─────────────────
   const cloudVert = `
@@ -172,40 +167,85 @@ import * as THREE from 'https://unpkg.com/three@0.160.1/build/three.module.js';
     });
   }
 
-  // ── SCROLL-DRIVEN CAMERA DOLLY (native scroll + GSAP ScrollTrigger) ──
+  // ── SCROLL: full-page progress + per-section "mood" targets ───────
+  // Each mood nudges fog color, sky tone and gold-glow strength so every
+  // section feels like a distinct but continuous part of the same world.
+  const moods = {
+    home:         { fog: '#0a0f1e', top: '#0a0f1e', bottom: '#1a2750', gold: 0.16 },
+    about:        { fog: '#0c1224', top: '#0c1224', bottom: '#161f3c', gold: 0.14 },
+    skills:       { fog: '#0a0f1e', top: '#0a0f1e', bottom: '#141c35', gold: 0.12 },
+    portfolio:    { fog: '#05070f', top: '#05070f', bottom: '#0f1628', gold: 0.20 },
+    services:     { fog: '#0a0f1e', top: '#0a0f1e', bottom: '#1a2750', gold: 0.16 },
+    'why-us':     { fog: '#0c1224', top: '#0c1224', bottom: '#161f3c', gold: 0.14 },
+    testimonials: { fog: '#150f08', top: '#150f08', bottom: '#2a2110', gold: 0.30 },
+    contact:      { fog: '#1a1206', top: '#1a1206', bottom: '#3a2a08', gold: 0.40 }
+  };
+  const current = {
+    fog: new THREE.Color(moods.home.fog),
+    top: new THREE.Color(moods.home.top),
+    bottom: new THREE.Color(moods.home.bottom),
+    gold: moods.home.gold
+  };
+  const target = { ...current, fog: current.fog.clone(), top: current.top.clone(), bottom: current.bottom.clone() };
+
   let scrollProgress = 0;
-  if (!prefersReducedMotion && window.gsap && window.ScrollTrigger) {
+  if (window.gsap && window.ScrollTrigger) {
     gsap.registerPlugin(ScrollTrigger);
-    const heroSection = document.getElementById('home');
-    if (heroSection) {
+    Object.keys(moods).forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
       ScrollTrigger.create({
-        trigger: heroSection,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.6,
-        onUpdate: (self) => { scrollProgress = self.progress; }
+        trigger: el,
+        start: 'top 55%',
+        end: 'bottom 45%',
+        onEnter: () => setTarget(moods[id]),
+        onEnterBack: () => setTarget(moods[id])
       });
-    }
+    });
+    ScrollTrigger.create({
+      trigger: document.body,
+      start: 'top top',
+      end: 'max',
+      scrub: 0.6,
+      onUpdate: (self) => { scrollProgress = self.progress; }
+    });
+  }
+  function setTarget(m) {
+    target.fog.set(m.fog);
+    target.top.set(m.top);
+    target.bottom.set(m.bottom);
+    target.gold = m.gold;
   }
 
   // ── RENDER LOOP ────────────────────────────────────────────────────
   const clock = new THREE.Clock();
   let rafId = null;
+  canvas.style.opacity = isMobile ? '0.45' : '0.6';
 
   function frame() {
     rafId = requestAnimationFrame(frame);
     const t = clock.getElapsedTime();
     cloudLayers.forEach((c) => { c.mat.uniforms.uTime.value = t * c.speed; });
 
+    // Smoothly ease scene colors toward whichever section's mood is active.
+    current.fog.lerp(target.fog, 0.02);
+    current.top.lerp(target.top, 0.02);
+    current.bottom.lerp(target.bottom, 0.02);
+    current.gold += (target.gold - current.gold) * 0.02;
+    scene.fog.color.copy(current.fog);
+    skyMat.uniforms.uTop.value.copy(current.top);
+    skyMat.uniforms.uBottom.value.copy(current.bottom);
+
     mouseCurrent.x += (mouseTarget.x - mouseCurrent.x) * 0.03;
     mouseCurrent.y += (mouseTarget.y - mouseCurrent.y) * 0.03;
     camera.position.x = mouseCurrent.x * 0.35;
-    camera.position.y = 0.6 - mouseCurrent.y * 0.2;
-    camera.position.z = 8 - scrollProgress * 5.5;
+    // Gentle continuous forward drift the full length of the page, easing
+    // back and forth slightly rather than dollying indefinitely into the ridges.
+    const breathe = Math.sin(scrollProgress * Math.PI * 3) * 0.6;
+    camera.position.y = 0.6 - mouseCurrent.y * 0.2 + breathe * 0.15;
+    camera.position.z = 8 - breathe;
     camera.lookAt(0, 0.3, -6);
-
-    ridgeNear.position.y = -0.4 * scrollProgress;
-    canvas.style.opacity = String(Math.max(0, 1 - scrollProgress * 1.15));
+    ridgeNear.position.y = breathe * 0.1;
 
     renderer.render(scene, camera);
   }

@@ -1,16 +1,16 @@
-// public/js/env/environment.js
-// SRT ROYAL — Master Coordinator for Cinematic Natural 3D WebGL Atmosphere
-// Integrates SkyAtmosphere, LightSystem, DepthLayers, Particles, Clouds, Camera, and Interaction.
-// Strictly procedural: ZERO photograph assets. Pure shaders, procedural shapes, and natural light.
+// public/js/royalEnv.js
+// SRT ROYAL — Three.js environment entry point
+// This script sets up the Three.js scene, renderer, camera, and procedural visual subsystems.
+// It is loaded via a module script tag in index.html and attaches the canvas with id 'royalEnvCanvas'.
 
-import { PALETTE, SECTION_MOODS, getDeviceProfile } from './config.js';
-import { createSkyAtmosphere } from './skyAtmosphere.js';
-import { createLightSystem } from './lightSystem.js';
-import { createDepthLayers } from './depthLayers.js';
-import { createParticleSystem } from './particles.js';
-import { createAtmosphericMist } from './clouds.js';
-import { createCameraController } from './cameraController.js';
-import { createInteractionController } from './interaction.js';
+import { PALETTE, SECTION_MOODS, getDeviceProfile } from './env/config.js';
+import { createSkyAtmosphere } from './env/skyAtmosphere.js';
+import { createLightSystem } from './env/lightSystem.js';
+import { createDepthLayers } from './env/depthLayers.js';
+import { createParticleSystem } from './env/particles.js';
+import { createAtmosphericMist } from './env/clouds.js';
+import { createCameraController } from './env/cameraController.js';
+import { createInteractionController } from './env/interaction.js';
 
 (async function initRoyalEnvironment() {
   const canvas = document.getElementById('royalEnvCanvas');
@@ -18,7 +18,7 @@ import { createInteractionController } from './interaction.js';
 
   const profile = getDeviceProfile();
 
-  // WebGL availability check
+  // WebGL support check
   function isWebGLSupported() {
     try {
       const testCanvas = document.createElement('canvas');
@@ -34,7 +34,7 @@ import { createInteractionController } from './interaction.js';
   function activateCSSFallback() {
     document.body.classList.add('webgl-fallback-active');
     if (canvas) canvas.style.display = 'none';
-    console.info('SRT Royal: WebGL unavailable or disabled. Activating procedural CSS natural atmosphere.');
+    console.info('SRT Royal: WebGL unavailable or disabled. Activating procedural CSS fallback.');
   }
 
   if (!isWebGLSupported()) {
@@ -42,13 +42,13 @@ import { createInteractionController } from './interaction.js';
     return;
   }
 
-  // Load Three.js (try local vendor first, then trusted unpkg CDN)
+  // Load Three.js (local vendor fallback, then CDN)
   let THREE;
   try {
     THREE = await import('../vendor/three.module.js');
   } catch (e1) {
     try {
-      THREE = await import('https://unpkg.com/three@0.160.1/build/three.module.js');
+      THREE = await import('https://unpkg.com/three@0.186.0/build/three.module.js');
     } catch (e2) {
       activateCSSFallback();
       return;
@@ -74,15 +74,11 @@ import { createInteractionController } from './interaction.js';
 
   const scene = new THREE.Scene();
 
-  // Natural fog initialized with 'home' hero mood
+  // Initialize fog with home mood
   const initialMood = SECTION_MOODS.home;
-  scene.fog = new THREE.Fog(
-    initialMood.fog,
-    initialMood.fogNear,
-    initialMood.fogFar
-  );
+  scene.fog = new THREE.Fog(initialMood.fog, initialMood.fogNear, initialMood.fogFar);
 
-  // Modular subsystem initialization
+  // Subsystems
   const cameraController = createCameraController(THREE, window.innerWidth, window.innerHeight);
   const skyAtmosphere = createSkyAtmosphere(THREE, scene);
   const lightSystem = createLightSystem(THREE, scene, profile);
@@ -90,7 +86,7 @@ import { createInteractionController } from './interaction.js';
   const particleSystem = createParticleSystem(THREE, scene, profile);
   const atmosphericMist = createAtmosphericMist(THREE, scene, profile);
 
-  // Dynamic mood state
+  // Mood state
   const currentMood = {
     fog: new THREE.Color(initialMood.fog),
     skyTop: new THREE.Color(initialMood.skyTop),
@@ -133,14 +129,12 @@ import { createInteractionController } from './interaction.js';
     targetMood.cameraY = m.cameraY;
   }
 
-  // Interaction controller for mouse parallax & continuous scroll tracking
   const interactionController = createInteractionController(
     profile,
     SECTION_MOODS,
     (mood) => setMood(mood)
   );
 
-  // Resize handler
   function handleResize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -149,7 +143,6 @@ import { createInteractionController } from './interaction.js';
   }
   window.addEventListener('resize', handleResize, { passive: true });
 
-  // Render loop
   const clock = new THREE.Clock();
   let animationFrameId = null;
   let isRunning = true;
@@ -157,11 +150,10 @@ import { createInteractionController } from './interaction.js';
   function renderFrame() {
     if (!isRunning) return;
     animationFrameId = requestAnimationFrame(renderFrame);
-
     const time = clock.getElapsedTime();
     const lerpFactor = 0.025;
 
-    // Smooth color evolution towards current section target
+    // Interpolate colors
     currentMood.fog.lerp(targetMood.fog, lerpFactor);
     scene.fog.color.copy(currentMood.fog);
 
@@ -169,16 +161,8 @@ import { createInteractionController } from './interaction.js';
     const scrollProgress = interactionController.getScrollProgress();
     const mouseCurrent = interactionController.mouseCurrent;
 
-    // Update camera with dollying, responsive pitch, and natural breathing
-    cameraController.update(
-      time,
-      scrollProgress,
-      mouseCurrent,
-      targetMood,
-      profile.prefersReducedMotion
-    );
+    cameraController.update(time, scrollProgress, mouseCurrent, targetMood, profile.prefersReducedMotion);
 
-    // Update procedural subsystems
     skyAtmosphere.update(time, currentMood, targetMood, lerpFactor);
     lightSystem.update(time, currentMood, targetMood, lerpFactor);
     depthLayers.update(time, scrollProgress, mouseCurrent, targetMood, lerpFactor);
@@ -188,14 +172,12 @@ import { createInteractionController } from './interaction.js';
     renderer.render(scene, cameraController.camera);
   }
 
-  // Respect prefers-reduced-motion: render single still frame or smooth loop
   if (profile.prefersReducedMotion) {
     renderer.render(scene, cameraController.camera);
   } else {
     renderFrame();
   }
 
-  // Battery saving / performance: pause rendering when tab is hidden
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       isRunning = false;
@@ -203,13 +185,12 @@ import { createInteractionController } from './interaction.js';
     } else {
       if (!profile.prefersReducedMotion) {
         isRunning = true;
-        clock.getDelta(); // reset clock delta to avoid jumps
+        clock.getDelta();
         renderFrame();
       }
     }
   });
 
-  // Public API
   window.srtEnvironment = {
     setMood,
     getMood: () => currentMood,

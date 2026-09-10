@@ -735,7 +735,7 @@ function renderDesignerProfile(user, hireRequests, projects, earnings) {
 
     <div class="earnings-summary" style="margin-top:28px;padding:20px;border:1px solid var(--border);border-radius:var(--radius);">
       <h4 class="profile-sub-title" style="margin-top:0;">💰 Total Earned</h4>
-      <p style="font-size:1.8rem;font-weight:800;color:var(--gold, #FFD700);margin:0;">৳${(earnings?.totalEarned || 0).toLocaleString()}</p>
+      <p style="font-size:1.8rem;font-weight:800;color:var(--gold, #CFA85A);margin:0;">৳${(earnings?.totalEarned || 0).toLocaleString()}</p>
       <p class="text-muted" style="font-size:.82rem;">From confirmed payments only. Your share is always 50% of what the client pays, calculated on the server.</p>
     </div>
 
@@ -1540,5 +1540,5 @@ window.addEventListener("load", () => {
   document.body.classList.add("loaded");
 });
 
-console.log("%cSRT ROYAL — Premium Frontend Experience", "color:#FFD700;font-size:16px;font-weight:bold;");
+console.log("%cSRT ROYAL — Premium Frontend Experience", "color:#CFA85A;font-size:16px;font-weight:bold;");
 console.log("%cDesigned & Developed by Sr. Tawsif", "color:#888;font-size:12px;");

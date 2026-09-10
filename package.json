@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "node --check server.js && node --check server/app.js && node --check public/app.js && node --check public/js/env/environment.js && node --check api/index.js",
+    "build": "node --check server.js && node --check server/app.js && node --check public/app.js && node --check public/js/royalEnv.js && node --check public/js/env/config.js && node --check public/js/env/skyAtmosphere.js && node --check public/js/env/lightSystem.js && node --check public/js/env/depthLayers.js && node --check public/js/env/particles.js && node --check public/js/env/clouds.js && node --check public/js/env/cameraController.js && node --check public/js/env/interaction.js && node --check api/index.js",
     "test": "node --test",
     "create-admin": "node scripts/create-admin.js"
   },

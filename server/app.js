@@ -129,7 +129,14 @@ async function createApp() {
     },
   }));
 
-  app.get('*', (req, res, next) => {
+  const spaFallbackLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  app.get('*', spaFallbackLimiter, (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
     return res.sendFile(path.join(__dirname, '../public/index.html'));
   });

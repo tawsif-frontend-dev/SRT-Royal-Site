@@ -143,8 +143,10 @@ window.addEventListener("scroll", () => {
 
 /* ─────────────────────────────────────────────
    SCROLL REVEAL ANIMATION (staggered per group)
+   [data-reveal] on any element opts it into the same
+   scroll-triggered, reveal-once behavior as .reveal.
 ───────────────────────────────────────────── */
-const revealEls = $$(".reveal, .reveal-left, .reveal-right, .hiw-card, .designer-card, .testimonial-card, .hero-stat, .portfolio-card");
+const revealEls = $$(".reveal, .reveal-left, .reveal-right, .hiw-card, .designer-card, .testimonial-card, .hero-stat, .portfolio-card, [data-reveal]");
 
 // Stagger delay: siblings sharing a parent animate in sequence (max 5-step cycle)
 revealEls.forEach((el) => {
@@ -165,6 +167,115 @@ const revealObs = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.12 });
 revealEls.forEach((el) => revealObs.observe(el));
+
+/* ─────────────────────────────────────────────
+   MOTION SYSTEM
+   Hero load sequence, ambient glow sweep, magnetic
+   buttons, page transitions, form-error motion.
+   Everything here respects prefers-reduced-motion.
+───────────────────────────────────────────── */
+const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Hero headline: split into per-line spans so each line eases up in sequence
+   instead of the whole headline arriving as one block. Safe no-op if there's
+   no .hero-headline on the page. */
+(function splitHeroHeadline() {
+  const headline = $(".hero-headline");
+  if (!headline || REDUCE_MOTION) return;
+
+  // Split on <br> so markup like "Frontend Development<br/>With <span>Royal</span> Precision."
+  // becomes one .hero-line per visual line, each keeping its inner markup (e.g. the gold span).
+  const html = headline.innerHTML;
+  const lineParts = html.split(/<br\s*\/?>/i);
+  if (lineParts.length < 1) return;
+
+  headline.innerHTML = lineParts
+    .map((part, i) => `<span class="hero-line" style="--line-delay:${(0.5 + i * 0.14).toFixed(2)}s">${part.trim()}</span>`)
+    .join("");
+  headline.classList.add("hero-headline--split");
+})();
+
+/* Ambient gold glow sweep behind the hero copy */
+(function addHeroGlow() {
+  const heroInner = $(".hero-split-inner") || $(".hero-container");
+  if (!heroInner || heroInner.querySelector(".hero-text-glow")) return;
+  const glow = document.createElement("div");
+  glow.className = "hero-text-glow";
+  glow.setAttribute("aria-hidden", "true");
+  heroInner.prepend(glow);
+})();
+
+/* Buttons: soft magnetic pull toward the cursor + press-down on click (CSS handles :active) */
+if (!REDUCE_MOTION && matchMedia("(hover: hover)").matches) {
+  const MAX_PULL = 6; // px — subtle, not distracting
+  $$(".btn").forEach((btn) => {
+    btn.addEventListener("mousemove", (e) => {
+      const r = btn.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width - 0.5) * 2;
+      const y = ((e.clientY - r.top) / r.height - 0.5) * 2;
+      btn.style.setProperty("--mx", `${(x * MAX_PULL).toFixed(1)}px`);
+      btn.style.setProperty("--my", `${(y * MAX_PULL).toFixed(1)}px`);
+    });
+    btn.addEventListener("mouseleave", () => {
+      btn.style.setProperty("--mx", "0px");
+      btn.style.setProperty("--my", "0px");
+    });
+  });
+}
+
+/* Page transition: quick fade-out before internal navigation, fade-in is CSS-only on load */
+window.addEventListener("pageshow", () => document.body.classList.remove("page-exit"));
+
+if (!REDUCE_MOTION) {
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href]");
+    if (!link || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+    if (link.target && link.target !== "_self") return;
+    if (link.hasAttribute("download")) return;
+    let url;
+    try { url = new URL(href, window.location.href); } catch (_) { return; }
+    if (url.origin !== window.location.origin) return; // external links navigate instantly, no fade
+
+    e.preventDefault();
+    document.body.classList.add("page-exit");
+    setTimeout(() => { window.location.href = href; }, 200);
+  });
+}
+
+/* Form validation motion: shake + red pulse on invalid fields instead of static red text.
+   Uses the browser's native validity checks — non-invasive, doesn't touch existing submit logic. */
+document.addEventListener("invalid", (e) => {
+  const field = e.target;
+  if (!(field instanceof HTMLElement)) return;
+  field.classList.remove("field-invalid");
+  // eslint-disable-next-line no-unused-expressions
+  void field.offsetWidth; // restart animation if it's already mid-shake
+  field.classList.add("field-invalid");
+  field.addEventListener("animationend", () => field.classList.remove("field-invalid"), { once: true });
+}, true);
+document.addEventListener("input", (e) => {
+  const field = e.target;
+  if (field instanceof HTMLElement && field.classList.contains("field-invalid") && field.checkValidity?.()) {
+    field.classList.remove("field-invalid");
+  }
+});
+
+/* Count-up animation for admin/dashboard stat numbers ([data-count-to="N"]) */
+function animateCountUp(el, duration = 800) {
+  if (!el) return;
+  const target = parseInt(el.dataset.countTo || el.textContent, 10) || 0;
+  if (REDUCE_MOTION || !target) { el.textContent = target; return; }
+  const start = performance.now();
+  function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(eased * target);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
 
 /* ─────────────────────────────────────────────
    SCROLL PROGRESS BAR
@@ -1023,19 +1134,19 @@ async function renderCEOProfile(user) {
     </div>
     <div id="adminClientsWrap">
       <h4 class="profile-sub-title">👥 All Clients</h4>
-      <p class="text-muted" id="adminLoadingMsg">Loading clients…</p>
+      <div class="skeleton-wrap"><div class="skeleton-block"></div><div class="skeleton-block"></div></div>
     </div>
     <div id="adminRequestsWrap" style="margin-top:32px;">
       <h4 class="profile-sub-title">📋 All Hire Requests</h4>
-      <p class="text-muted" id="adminReqLoadingMsg">Loading requests…</p>
+      <div class="skeleton-wrap"><div class="skeleton-block"></div><div class="skeleton-block"></div></div>
     </div>
     <div id="adminMessagesWrap" style="margin-top:32px;">
       <h4 class="profile-sub-title">✉️ Contact Messages</h4>
-      <p class="text-muted" id="adminMsgLoadingMsg">Loading messages…</p>
+      <div class="skeleton-wrap"><div class="skeleton-block"></div><div class="skeleton-block"></div></div>
     </div>
     <div id="adminActivityWrap" style="margin-top:32px;">
       <h4 class="profile-sub-title">🕒 Recent Activity</h4>
-      <p class="text-muted" id="adminActivityLoadingMsg">Loading activity…</p>
+      <div class="skeleton-wrap"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
     </div>
   `;
 
@@ -1070,7 +1181,10 @@ async function renderCEOProfile(user) {
         </table></div>`;
 
     const wrap = $("#adminClientsWrap");
-    if (wrap) wrap.innerHTML = `<h4 class="profile-sub-title">👥 All Clients (${clients.length})</h4>${clientsHtml}`;
+    if (wrap) {
+      wrap.innerHTML = `<h4 class="profile-sub-title">👥 All Clients (<span class="stat-count" data-count-to="${clients.length}">0</span>)</h4>${clientsHtml}`;
+      animateCountUp(wrap.querySelector(".stat-count"));
+    }
   } catch (_) {
     const wrap = $("#adminClientsWrap");
     if (wrap) wrap.innerHTML = `<h4 class="profile-sub-title">👥 Clients</h4><p class="text-muted">Could not load clients.</p>`;
@@ -1108,7 +1222,10 @@ async function renderCEOProfile(user) {
         </table></div>`;
 
     const wrap = $("#adminRequestsWrap");
-    if (wrap) wrap.innerHTML = `<h4 class="profile-sub-title">📋 All Hire Requests (${requests.length})</h4>${reqHtml}`;
+    if (wrap) {
+      wrap.innerHTML = `<h4 class="profile-sub-title">📋 All Hire Requests (<span class="stat-count" data-count-to="${requests.length}">0</span>)</h4>${reqHtml}`;
+      animateCountUp(wrap.querySelector(".stat-count"));
+    }
 
     // Attach status change listeners
     $$(".status-select").forEach(select => {
@@ -1163,7 +1280,10 @@ async function renderCEOProfile(user) {
         </table></div>`;
 
     const wrap = $("#adminMessagesWrap");
-    if (wrap) wrap.innerHTML = `<h4 class="profile-sub-title">✉️ Contact Messages (${messages.length})</h4>${msgHtml}`;
+    if (wrap) {
+      wrap.innerHTML = `<h4 class="profile-sub-title">✉️ Contact Messages (<span class="stat-count" data-count-to="${messages.length}">0</span>)</h4>${msgHtml}`;
+      animateCountUp(wrap.querySelector(".stat-count"));
+    }
 
     $$(".mark-handled-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {

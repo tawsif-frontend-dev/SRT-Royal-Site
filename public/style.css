@@ -189,12 +189,26 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
   transition: background .4s, box-shadow .4s, padding .3s;
 }
 .navbar.scrolled {
-  background: rgba(10,15,30,.95);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: transparent;
   box-shadow: 0 2px 30px rgba(0,0,0,.6);
   border-bottom: 1px solid var(--border);
 }
+/* Blur lives on a separate layer, not on .navbar itself — backdrop-filter on
+   an ancestor turns it into the containing block for position:fixed children,
+   which was breaking the full-screen mobile #navLinks panel once scrolled. */
+.navbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(10,15,30,.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  opacity: 0;
+  transition: opacity .4s;
+  z-index: -1;
+  pointer-events: none;
+}
+.navbar.scrolled::before { opacity: 1; }
 
 .nav-container {
   max-width: 1200px;
@@ -1766,6 +1780,7 @@ h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.15; }
   /* Nav mobile */
   .nav-links {
     position: fixed;
+    top: 74px; right: 0; bottom: 0; left: 0;
     inset: 74px 0 0 0;
     background: rgba(10,15,30,.98);
     backdrop-filter: blur(20px);

@@ -2151,3 +2151,46 @@ body.page-exit { animation: pageFadeOut .2s ease forwards; }
   margin-bottom: 10px;
 }
 .exp-content p { color: var(--text-muted); font-size: .92rem; line-height: 1.7; }
+
+/* ═══════════════════════════════════════════════════════════
+   CINEMATIC SCROLL STORYTELLING (GSAP + ScrollTrigger)
+   Drives .section entrances and staggered grid-card reveals.
+   Initial hidden states are set by scrollCinema.js via
+   gsap.set() at runtime — NOT here — so that if the GSAP CDN
+   ever fails to load, content still renders normally instead
+   of being stuck invisible.
+═══════════════════════════════════════════════════════════ */
+
+/* Perf hint for the browser — only while a section is
+   actively animating. Removed by JS once the tween completes. */
+.section.cine-animating,
+.cine-animating > * {
+  will-change: transform, opacity;
+}
+
+/* Once GSAP has taken ownership of an element's opacity/transform,
+   kill the legacy CSS-transition reveal system on it so the two
+   engines never fight over the same properties (that's what
+   causes the jittery "double animation" look). */
+.gsap-managed {
+  transition: none !important;
+}
+
+/* Optional per-section pin hook. Add data-pin="true" to any
+   <section class="section"> in the HTML to make scrollCinema.js
+   pin it in the viewport while its scene plays out — use
+   sparingly (hero/portfolio work well; pinning every section
+   makes the page feel slow, not premium). */
+[data-pin="true"] {
+  overflow: visible; /* let pinned content breathe past the section's own clip */
+}
+
+/* Respect users who've asked for less motion: show everything
+   at rest, no scroll-driven animation. */
+@media (prefers-reduced-motion: reduce) {
+  .section,
+  [class*="-grid"] > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

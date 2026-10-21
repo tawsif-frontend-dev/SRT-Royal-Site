@@ -74,7 +74,7 @@ h1,h2,h3,h4 { font-family:var(--font-head); font-weight:400; letter-spacing:-.02
 .btn { position:relative; isolation:isolate; border-radius:999px; font-weight:500; letter-spacing:0; transition:transform .5s var(--ease), background .3s, color .3s, border-color .3s; }
 .btn::before {
   content:""; position:absolute; inset:-1px; border-radius:inherit; z-index:-1; opacity:0; transition:opacity .3s;
-  background:radial-gradient(120px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.55), transparent 70%);
+  background:radial-gradient(120px circle at var(--rx,50%) var(--ry,50%), rgba(255,255,255,.55), transparent 70%);
   padding:1px; -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
 }
 .btn:hover::before { opacity:1; }
@@ -120,7 +120,7 @@ h1,h2,h3,h4 { font-family:var(--font-head); font-weight:400; letter-spacing:-.02
 }
 .service-card::after,.skill-card::after,.portfolio-card::after,.designer-card::after,.testimonial-card::after {
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .35s;
-  background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.07), transparent 60%);
+  background:radial-gradient(360px circle at var(--rx,50%) var(--ry,50%), rgba(255,255,255,.07), transparent 60%);
 }
 .service-card:hover::after,.skill-card:hover::after,.portfolio-card:hover::after,.designer-card:hover::after,.testimonial-card:hover::after { opacity:1; }
 .service-icon,.skill-icon,.hiw-icon,.hf-icon { background:rgba(255,255,255,.06); color:#fff; border:1px solid var(--border); border-radius:16px; }
@@ -167,3 +167,84 @@ h1,h2,h3,h4 { font-family:var(--font-head); font-weight:400; letter-spacing:-.02
   .navbar { width:calc(100% - 16px); top:8px; }
 }
 @media (prefers-reduced-motion:reduce) { body::after { animation:none; } }
+
+/* ═══════════════════════════════════════════════════════════
+   HERO STAGE — floating island scene, cream cards, serif lockup
+═══════════════════════════════════════════════════════════ */
+.hero-stage {
+  display:block; position:relative; min-height:100svh; overflow:hidden; isolation:isolate;
+  background:
+    radial-gradient(60% 55% at 62% 38%, rgba(214,150,60,.22), transparent 70%),
+    radial-gradient(90% 80% at 50% 0%, #1b1713 0%, #0b0a09 55%, #050505 100%);
+}
+.hero-scene { position:absolute; inset:0; width:100%; height:100%; z-index:0; opacity:0; transition:opacity 1.4s ease; }
+.hero-scene.is-ready { opacity:1; }
+.hero-vignette { position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(90deg, rgba(5,5,5,.78) 0%, rgba(5,5,5,.25) 38%, transparent 60%), radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.65)); }
+.hero-wordmark {
+  position:absolute; left:50%; bottom:-.16em; transform:translateX(-50%); z-index:1; pointer-events:none; white-space:nowrap;
+  font-family:var(--font-head); font-size:clamp(7rem,26vw,24rem); line-height:1; letter-spacing:-.03em;
+  color:transparent; -webkit-text-stroke:1px rgba(255,255,255,.07);
+  background:linear-gradient(180deg, rgba(255,255,255,.07), transparent 70%); -webkit-background-clip:text; background-clip:text;
+}
+.hero-stage .hero-split-content { position:relative; z-index:3; padding:0 6vw; min-height:100svh; justify-content:center; max-width:640px; }
+.hero-stage .hero-split-inner { display:flex; flex-direction:column; align-items:flex-start; }
+.hero-kicker { font:500 .66rem var(--font-mono); letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin-bottom:22px; }
+.hero-stage .hero-headline { font-size:clamp(2.6rem,5.4vw,4.8rem); line-height:1.02; letter-spacing:-.025em; margin-bottom:22px; }
+.hero-stage .hero-headline em { font-style:italic; color:#ffd9a0; text-shadow:0 0 36px rgba(255,170,70,.45); }
+.hero-stage .hero-sub { font-size:.95rem; max-width:380px; margin:0 0 26px; }
+.hero-stage .hero-actions { margin-bottom:56px; gap:14px; }
+.hero-stage .hero-stats { border:0; padding:0; display:grid; gap:22px; }
+.hero-stage .hero-stat-divider { display:none; }
+.hero-stage .hero-stat { display:flex; flex-direction:column; gap:3px; padding-left:34px; position:relative; }
+.hero-stage .hero-stat::before { content:"✦"; position:absolute; left:2px; top:2px; font-size:.7rem; color:#ffd9a0; opacity:.8; }
+.hero-stage .hero-stat:nth-child(3) { margin-left:60px; }
+.hero-stage .stat-val { font:500 .86rem var(--font-body); color:#fff; }
+.hero-stage .stat-lbl { order:-1; }
+
+/* cream floating cards */
+.stage-cards { position:absolute; z-index:4; right:7vw; top:50%; width:min(300px,26vw); transform:translateY(-52%); pointer-events:none; }
+.stage-card {
+  --px:0px; --py:0px; pointer-events:auto; display:block; position:relative; text-decoration:none; color:#1a1713;
+  background:#ece6dc; border-radius:28px; padding:12px; box-shadow:0 30px 70px rgba(0,0,0,.55), inset 0 1px 0 #fff;
+  transform:translate3d(var(--px),var(--py),0) rotate(var(--rot,0deg)); transition:transform .6s var(--ease), box-shadow .4s;
+  animation:cardFloat 7s ease-in-out infinite;
+}
+.stage-card:hover { box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 60px rgba(255,170,70,.18), inset 0 1px 0 #fff; }
+.stage-card--note { margin-left:-46%; --rot:-.6deg; }
+.stage-card--work { margin:16px 0 0 24%; --rot:.8deg; animation-delay:-3.2s; }
+.stage-thumb {
+  height:92px; border-radius:18px; margin-bottom:14px; background-color:#9a9388;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.018 .03' numOctaves='5' seed='4'/><feDiffuseLighting lighting-color='%23d9d3c8' surfaceScale='5'><feDistantLight azimuth='235' elevation='55'/></feDiffuseLighting></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  background-size:cover; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08), inset 0 8px 20px rgba(0,0,0,.18);
+}
+.stage-thumb--tall { height:128px; margin:14px 0 0; }
+.stage-kicker { display:block; font:400 .66rem var(--font-body); color:#8b8478; margin-bottom:6px; padding:0 6px; }
+.stage-card h3 { font-family:var(--font-head); font-size:1.32rem; line-height:1.08; color:#1a1713; padding:0 6px 8px; max-width:78%; letter-spacing:-.01em; }
+.stage-arrow { position:absolute; right:14px; bottom:14px; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:#d9d2c5; color:#1a1713; font-size:1rem; transition:transform .5s var(--ease), background .3s; }
+.stage-arrow--top { top:14px; bottom:auto; }
+.stage-card:hover .stage-arrow { background:#1a1713; color:#ece6dc; transform:translateX(3px) rotate(-45deg); }
+@keyframes cardFloat { 0%,100%{ translate:0 0 } 50%{ translate:0 -10px } }
+
+.hero-discover { position:absolute; z-index:4; left:50%; bottom:46px; display:flex; flex-direction:column; align-items:center; gap:12px; text-decoration:none; color:var(--text-muted); font:500 .6rem var(--font-mono); letter-spacing:.3em; text-transform:uppercase; }
+.hero-discover span { writing-mode:vertical-rl; }
+.hero-discover i { width:1px; height:56px; background:linear-gradient(#fff,transparent); animation:discover 2.2s ease-in-out infinite; transform-origin:top; }
+@keyframes discover { 0%{ transform:scaleY(0) } 50%{ transform:scaleY(1) } 100%{ transform:scaleY(1); opacity:0 } }
+.hero-foot { position:absolute; z-index:4; left:6vw; bottom:34px; font:500 .62rem var(--font-mono); letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); }
+
+/* nav: cream active pill like the reference */
+.navbar .nav-link { border-radius:999px; padding:8px 16px; }
+.navbar .nav-link::after { display:none; }
+.navbar .nav-link:hover { background:rgba(255,255,255,.07); color:#fff; }
+.navbar .nav-link.active { background:#ece6dc; color:#1a1713; }
+
+@media (max-width:980px) {
+  .stage-cards { position:relative; right:auto; top:auto; transform:none; width:auto; z-index:4; display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:0 20px 120px; margin-top:-30px; }
+  .stage-card--note,.stage-card--work { margin:0; }
+  .stage-card h3 { font-size:1.1rem; max-width:100%; }
+  .hero-stage .hero-split-content { min-height:auto; padding:140px 24px 60px; max-width:none; }
+  .hero-vignette { background:linear-gradient(180deg, rgba(5,5,5,.35), rgba(5,5,5,.7)); }
+  .hero-discover { display:none; }
+}
+@media (max-width:560px){ .stage-cards{ grid-template-columns:1fr; } }
+@media (prefers-reduced-motion:reduce){ .stage-card{ animation:none; } .hero-discover i{ animation:none; } }

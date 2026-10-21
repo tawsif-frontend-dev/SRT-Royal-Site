@@ -85,15 +85,13 @@
   </nav>
 
   <!-- ══════════════ HERO ══════════════ -->
-  <section class="hero hero-split" id="home">
-    <div class="hero-bg-pattern"></div>
+  <section class="hero hero-split hero-stage" id="home">
+    <canvas id="heroScene" class="hero-scene" aria-hidden="true"></canvas>
+    <div class="hero-vignette" aria-hidden="true"></div>
+    <div class="hero-wordmark" aria-hidden="true">SRT ROYAL</div>
     <div class="hero-split-content">
       <div class="hero-split-inner">
-      <div class="hero-meta"><span><b>SRT Royal</b> / Design Studio</span><span>Bangladesh</span><span>Est. 2025</span></div>
-      <div class="hero-badge">
-        <span class="badge-dot"></span>
-        <span>Available for Creative Projects</span>
-      </div>
+      <div class="hero-kicker">Frontend Studio — Est. 2025</div>
       <h1 class="hero-headline">
         Frontend Development<br/>With <em>Royal</em> Precision.
       </h1>
@@ -121,11 +119,22 @@
       </div>
       </div>
     </div>
-    <div class="hero-split-photo">
-      <img src="T.jpg" alt="SRT Royal Design" loading="eager" onerror="this.style.display='none'"/>
-      <div class="hero-split-overlay"></div>
-      <div class="hero-split-seam"></div>
-    </div>
+    <aside class="stage-cards" aria-label="Highlights">
+      <a class="stage-card stage-card--note" href="#about" data-depth="22">
+        <div class="stage-thumb"></div>
+        <span class="stage-kicker">Field note 01</span>
+        <h3>Pixel-perfect, cut to last</h3>
+        <span class="stage-arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="stage-card stage-card--work" href="#portfolio" data-depth="40">
+        <span class="stage-kicker">Selected work</span>
+        <h3>Built with royal precision</h3>
+        <span class="stage-arrow stage-arrow--top" aria-hidden="true">→</span>
+        <div class="stage-thumb stage-thumb--tall"></div>
+      </a>
+    </aside>
+    <a class="hero-discover" href="#about" aria-label="Scroll to discover"><span>Discover</span><i></i></a>
+    <div class="hero-foot">SRT Royal Studio — Bangladesh</div>
   </section>
 
   <!-- ══════════════ ABOUT ══════════════ -->
@@ -489,6 +498,7 @@
   <!-- Cinematic scroll-storytelling layer — must load AFTER gsap/ScrollTrigger/app.js -->
   <script src="js/scrollCinema.js"></script>
 
+  <script type="module" src="js/heroScene.js"></script>
   <script src="portfolio-fx.js" defer></script>
 </body>
 </html>

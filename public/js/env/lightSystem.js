@@ -4,11 +4,11 @@
 
 export function createLightSystem(THREE, scene, deviceProfile) {
   // Ambient natural bounce light (soft deep moss/forest tone)
-  const ambientLight = new THREE.AmbientLight('#173627', 1.2);
+  const ambientLight = new THREE.AmbientLight('#2c2b2a', 1.2);
   scene.add(ambientLight);
 
   // Directional sun light
-  const sunLight = new THREE.DirectionalLight('#CFA85A', 1.0);
+  const sunLight = new THREE.DirectionalLight('#9f9e9d', 1.0);
   sunLight.position.set(5.5, 8.5, -13);
   scene.add(sunLight);
 
@@ -18,7 +18,7 @@ export function createLightSystem(THREE, scene, deviceProfile) {
 
   const godrayUniforms = {
     uTime:      { value: 0 },
-    uColor:     { value: new THREE.Color('#D7C98C') },
+    uColor:     { value: new THREE.Color('#b9b8b7') },
     uIntensity: { value: 0.38 },
   };
 

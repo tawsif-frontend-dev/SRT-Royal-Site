@@ -4,10 +4,10 @@
 
 export function createSkyAtmosphere(THREE, scene) {
   const uniforms = {
-    uTopColor:     { value: new THREE.Color('#07150f') },
-    uBottomColor:  { value: new THREE.Color('#123526') },
-    uHorizonColor: { value: new THREE.Color('#91B5BD') },
-    uSunColor:     { value: new THREE.Color('#CFA85A') },
+    uTopColor:     { value: new THREE.Color('#121110') },
+    uBottomColor:  { value: new THREE.Color('#2a2928') },
+    uHorizonColor: { value: new THREE.Color('#a2a1a0') },
+    uSunColor:     { value: new THREE.Color('#9f9e9d') },
     uSunDir:       { value: new THREE.Vector3(0.3, 0.6, -0.7).normalize() },
     uSunGlow:      { value: 0.85 },
     uHorizonHaze:  { value: 0.45 },

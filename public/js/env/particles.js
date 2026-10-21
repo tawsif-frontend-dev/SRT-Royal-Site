@@ -39,8 +39,8 @@ export function createParticleSystem(THREE, scene, deviceProfile) {
   const uniforms = {
     uTime:      { value: 0 },
     uBaseSize:  { value: deviceProfile.isMobile ? 18.0 : 26.0 },
-    uGoldColor: { value: new THREE.Color('#D7C98C') },
-    uSkyColor:  { value: new THREE.Color('#91B5BD') },
+    uGoldColor: { value: new THREE.Color('#b9b8b7') },
+    uSkyColor:  { value: new THREE.Color('#a2a1a0') },
     uOpacity:   { value: 0.55 },
   };
 

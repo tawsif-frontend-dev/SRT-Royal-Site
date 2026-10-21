@@ -47,7 +47,7 @@ export function createDepthLayers(THREE, scene, deviceProfile) {
   const farGeo = new THREE.ShapeGeometry(farShape);
   geometries.push(farGeo);
   const farMat = new THREE.MeshBasicMaterial({
-    color: 0x0e241b,
+    color: 0x1e1d1c,
     transparent: true,
     opacity: 0.82,
   });
@@ -73,7 +73,7 @@ export function createDepthLayers(THREE, scene, deviceProfile) {
   const midGeo = new THREE.ShapeGeometry(midShape);
   geometries.push(midGeo);
   const midMat = new THREE.MeshBasicMaterial({
-    color: 0x091e15,
+    color: 0x181716,
     transparent: true,
     opacity: 0.92,
   });
@@ -99,7 +99,7 @@ export function createDepthLayers(THREE, scene, deviceProfile) {
   const nearGeo = new THREE.ShapeGeometry(nearShape);
   geometries.push(nearGeo);
   const nearMat = new THREE.MeshBasicMaterial({
-    color: 0x06140e,
+    color: 0x11100f,
     transparent: true,
     opacity: 0.98,
   });
@@ -123,7 +123,7 @@ export function createDepthLayers(THREE, scene, deviceProfile) {
     transparent: true,
     depthWrite: false,
     uniforms: {
-      uColor: { value: new THREE.Color('#123526') },
+      uColor: { value: new THREE.Color('#2a2928') },
       uOpacity: { value: 0.35 },
     },
     vertexShader: `

@@ -22,6 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="portfolio-theme.css"/>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -33,6 +34,7 @@
     "address": { "@type": "PostalAddress", "addressCountry": "BD" }
   }
   </script>
+  <meta name="theme-color" content="#0a0a0a"/>
 </head>
 <body>
 
@@ -87,12 +89,13 @@
     <div class="hero-bg-pattern"></div>
     <div class="hero-split-content">
       <div class="hero-split-inner">
+      <div class="hero-meta"><span><b>SRT Royal</b> / Design Studio</span><span>Bangladesh</span><span>Est. 2025</span></div>
       <div class="hero-badge">
         <span class="badge-dot"></span>
         <span>Available for Creative Projects</span>
       </div>
       <h1 class="hero-headline">
-        Frontend Development<br/>With <span class="text-gold">Royal</span> Precision.
+        Frontend Development<br/>With <em>Royal</em> Precision.
       </h1>
       <p class="hero-sub">
         SRT ROYAL Design builds responsive, high-performance, pixel-perfect websites —
@@ -486,5 +489,6 @@
   <!-- Cinematic scroll-storytelling layer — must load AFTER gsap/ScrollTrigger/app.js -->
   <script src="js/scrollCinema.js"></script>
 
+  <script src="portfolio-fx.js" defer></script>
 </body>
 </html>

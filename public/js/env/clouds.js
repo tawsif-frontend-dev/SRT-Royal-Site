@@ -80,8 +80,8 @@ export function createAtmosphericMist(THREE, scene, deviceProfile) {
       uTime:           { value: Math.random() * 20 },
       uOpacity:        { value: (0.42 - i * 0.07) * (deviceProfile.isMobile ? 0.7 : 1.0) },
       uScale:          { value: 1.8 + i * 0.5 },
-      uColorBase:      { value: new THREE.Color('#91B5BD') },
-      uColorHighlight: { value: new THREE.Color('#D7C98C') },
+      uColorBase:      { value: new THREE.Color('#a2a1a0') },
+      uColorHighlight: { value: new THREE.Color('#b9b8b7') },
     };
 
     const mat = new THREE.ShaderMaterial({
